@@ -119,6 +119,12 @@ async function startServer() {
     res.json({ success: true, message: "문의가 접수되었습니다." });
   });
 
+  // Catch-all for API to prevent falling through to index.html
+  app.all("/api/*", (req, res) => {
+    console.log(`[API 404] ${req.method} ${req.url}`);
+    res.status(404).json({ error: "API route not found", path: req.url });
+  });
+
   // Vite middleware for development
   if (process.env.NODE_ENV !== "production") {
     const vite = await createViteServer({

@@ -1,0 +1,7 @@
+{
+  "name": "주식회사 이엔전력 (EN ELECTRIC CO.)",
+  "description": "호텔 및 모텔 전문 프리미엄 전기공사 전문 기업 이엔전력의 공식 웹사이트입니다.",
+  "requestFramePermissions": [
+    "geolocation"
+  ]
+}

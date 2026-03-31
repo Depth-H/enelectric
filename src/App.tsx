@@ -1021,12 +1021,15 @@ export default function App() {
     setError(null);
     try {
       const res = await fetch('/api/content');
-      if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({}));
+        throw new Error(`HTTP ${res.status}: ${errorData.message || res.statusText || 'Unknown error'}`);
+      }
       const json = await res.json();
       setData(json);
-    } catch (err) {
+    } catch (err: any) {
       console.error('Failed to fetch content:', err);
-      setError('데이터를 불러오는데 실패했습니다. 서버 상태를 확인해 주세요.');
+      setError(err.message || '데이터를 불러오는데 실패했습니다.');
     } finally {
       setLoading(false);
     }

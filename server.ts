@@ -78,16 +78,40 @@ async function startServer() {
 
   app.use(express.json());
 
+  // Request logger
+  app.use((req, res, next) => {
+    console.log(`[${new Date().toISOString()}] ${req.method} ${req.url}`);
+    next();
+  });
+
   // API Routes
   app.get("/api/content", async (req, res) => {
-    const data = await fs.readJson(DATA_FILE);
-    res.json(data);
+    try {
+      if (!fs.existsSync(DATA_FILE)) {
+        console.log("DATA_FILE not found, creating initial data...");
+        await fs.writeJson(DATA_FILE, initialData, { spaces: 2 });
+      }
+      const data = await fs.readJson(DATA_FILE);
+      res.json(data);
+    } catch (err) {
+      console.error("Error reading data.json:", err);
+      res.status(500).json({ error: "Failed to read data" });
+    }
   });
 
   app.post("/api/content", async (req, res) => {
-    const newData = req.body;
-    await fs.writeJson(DATA_FILE, newData, { spaces: 2 });
-    res.json({ success: true, data: newData });
+    try {
+      const newData = req.body;
+      await fs.writeJson(DATA_FILE, newData, { spaces: 2 });
+      res.json({ success: true, data: newData });
+    } catch (err) {
+      console.error("Error writing data.json:", err);
+      res.status(500).json({ error: "Failed to write data" });
+    }
+  });
+
+  app.get("/api/health", (req, res) => {
+    res.json({ status: "ok", env: process.env.NODE_ENV });
   });
 
   app.post("/api/contact", async (req, res) => {
@@ -109,6 +133,12 @@ async function startServer() {
       res.sendFile(path.join(distPath, 'index.html'));
     });
   }
+
+  // Global error handler
+  app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
+    console.error("Unhandled error:", err);
+    res.status(500).json({ error: "Internal Server Error", message: err.message });
+  });
 
   app.listen(PORT, "0.0.0.0", () => {
     console.log(`Server running on http://localhost:${PORT}`);

@@ -1014,23 +1014,29 @@ const Admin = ({ data, onUpdate }: { data: SiteData, onUpdate: (newData: SiteDat
 export default function App() {
   const [data, setData] = useState<SiteData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const fetchData = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await fetch('/api/content');
+      if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
+      const json = await res.json();
+      setData(json);
+    } catch (err) {
+      console.error('Failed to fetch content:', err);
+      setError('데이터를 불러오는데 실패했습니다. 서버 상태를 확인해 주세요.');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const res = await fetch('/api/content');
-        const json = await res.json();
-        setData(json);
-      } catch (err) {
-        console.error('Failed to fetch content:', err);
-      } finally {
-        setLoading(false);
-      }
-    };
     fetchData();
   }, []);
 
-  if (loading || !data) {
+  if (loading) {
     return (
       <div className="min-h-screen bg-black flex items-center justify-center">
         <div className="text-center">
@@ -1040,6 +1046,26 @@ export default function App() {
             className="w-12 h-12 border-2 border-ivory/20 border-t-ivory rounded-full mx-auto mb-6"
           />
           <span className="text-ivory/40 text-[10px] uppercase tracking-[0.4em]">Loading Experience</span>
+        </div>
+      </div>
+    );
+  }
+
+  if (error || !data) {
+    return (
+      <div className="min-h-screen bg-black flex items-center justify-center">
+        <div className="text-center max-w-md px-4">
+          <div className="w-16 h-16 bg-red-900/20 border border-red-900/40 rounded-full flex items-center justify-center mx-auto mb-8">
+            <X size={32} className="text-red-500" />
+          </div>
+          <h2 className="text-ivory font-bold text-xl mb-4 tracking-tight">문제가 발생했습니다</h2>
+          <p className="text-ivory/40 text-sm mb-10 leading-relaxed">{error || '데이터를 불러올 수 없습니다.'}</p>
+          <button 
+            onClick={fetchData}
+            className="w-full py-4 bg-ivory text-black text-xs font-bold uppercase tracking-widest hover:bg-white transition-all"
+          >
+            다시 시도하기
+          </button>
         </div>
       </div>
     );

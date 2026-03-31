@@ -1023,7 +1023,8 @@ export default function App() {
       const res = await fetch('/api/content');
       if (!res.ok) {
         const errorData = await res.json().catch(() => ({}));
-        throw new Error(`HTTP ${res.status}: ${errorData.message || res.statusText || 'Unknown error'}`);
+        const msg = errorData.message || errorData.error || res.statusText || 'Unknown error';
+        throw new Error(`HTTP ${res.status}: ${msg}`);
       }
       const json = await res.json();
       setData(json);

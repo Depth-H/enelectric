@@ -85,45 +85,53 @@ async function startServer() {
   });
 
   // API Routes
-  app.get("/api/content", async (req, res) => {
+  const apiRouter = express.Router();
+
+  apiRouter.get("/content", async (req, res) => {
+    console.log("[API] GET /content hit");
     try {
-      if (!fs.existsSync(DATA_FILE)) {
-        console.log("DATA_FILE not found, creating initial data...");
-        await fs.writeJson(DATA_FILE, initialData, { spaces: 2 });
+      const dataPath = path.join(process.cwd(), "data.json");
+      if (!fs.existsSync(dataPath)) {
+        console.log("data.json not found at", dataPath, "creating initial data...");
+        await fs.writeJson(dataPath, initialData, { spaces: 2 });
       }
-      const data = await fs.readJson(DATA_FILE);
+      const data = await fs.readJson(dataPath);
       res.json(data);
     } catch (err) {
       console.error("Error reading data.json:", err);
-      res.status(500).json({ error: "Failed to read data" });
+      res.status(500).json({ error: "Failed to read data", message: err instanceof Error ? err.message : String(err) });
     }
   });
 
-  app.post("/api/content", async (req, res) => {
+  apiRouter.post("/content", async (req, res) => {
+    console.log("[API] POST /content hit");
     try {
+      const dataPath = path.join(process.cwd(), "data.json");
       const newData = req.body;
-      await fs.writeJson(DATA_FILE, newData, { spaces: 2 });
+      await fs.writeJson(dataPath, newData, { spaces: 2 });
       res.json({ success: true, data: newData });
     } catch (err) {
       console.error("Error writing data.json:", err);
-      res.status(500).json({ error: "Failed to write data" });
+      res.status(500).json({ error: "Failed to write data", message: err instanceof Error ? err.message : String(err) });
     }
   });
 
-  app.get("/api/health", (req, res) => {
-    res.json({ status: "ok", env: process.env.NODE_ENV });
+  apiRouter.get("/health", (req, res) => {
+    res.json({ status: "ok", env: process.env.NODE_ENV, time: new Date().toISOString() });
   });
 
-  app.post("/api/contact", async (req, res) => {
-    console.log("Contact form submission:", req.body);
+  apiRouter.post("/contact", async (req, res) => {
+    console.log("[API] POST /contact hit:", req.body);
     res.json({ success: true, message: "문의가 접수되었습니다." });
   });
 
   // Catch-all for API to prevent falling through to index.html
-  app.all("/api/*", (req, res) => {
+  apiRouter.all("*", (req, res) => {
     console.log(`[API 404] ${req.method} ${req.url}`);
-    res.status(404).json({ error: "API route not found", path: req.url });
+    res.status(404).json({ error: "API route not found", path: req.url, method: req.method });
   });
+
+  app.use("/api", apiRouter);
 
   // Vite middleware for development
   if (process.env.NODE_ENV !== "production") {
